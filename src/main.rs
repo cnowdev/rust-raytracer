@@ -2,15 +2,33 @@ use std::io::{self, Write};
 pub mod vec3;
 pub mod color;
 pub mod ray;
+pub mod hittable;
+pub mod hittablelist;
+pub mod sphere;
+pub mod rtweekend;
+pub mod interval;
 
 use color::{Color, write_color};
 use ray::Ray;
 use vec3::{Vec3, Point3};
+use hittable::{Hittable, HitRecord};
+use hittablelist::{HittableList};
+use rtweekend::{INFINITY, PI};
+use crate::{interval::Interval, sphere::Sphere};
 
-fn ray_color(r: &Ray) -> Color {
-    let unit_direction = Vec3::unit_vector(&r.direction());
-    let a = 0.5*(unit_direction.y() + 1.0);
-    return (1.0 - a) * Color::new(1.0, 1.0, 1.0) + a * Color::new(0.5, 0.7, 1.0);
+fn ray_color(r: &Ray, world: &mut dyn Hittable) -> Color {
+    match world.hit(r, Interval::new(0.0, INFINITY)) {
+        None => {
+            //draw the background
+            let unit_direction = Vec3::unit_vector(&r.direction());
+            let a = 0.5*(unit_direction.y() + 1.0);
+            return (1.0-a)*Color::new(1.0, 1.0, 1.0) + a*Color::new(0.5, 0.7, 1.0);
+        },
+        Some(record) => {
+            //draw whatever got hit
+            return 0.5 * (record.normal + Color::new(1.0, 1.0, 1.0));
+        }
+    }
 }
 
 fn main() {
@@ -20,6 +38,20 @@ fn main() {
     
     let image_width: u16 = 400;
     let image_height: u16 = (image_width as f64 / aspect_ratio) as u16;
+
+    let mut world = HittableList::new();
+
+    world.add(Box::new(
+        Sphere::new(Point3::new(0.0, 0.0, -1.0), 0.5))
+    );
+
+    world.add(Box::new(
+        Sphere::new(Point3::new(0.0, -100.5, -1.0), 100.0))
+    );
+
+    
+
+
 
     // Camera constants
 
@@ -51,7 +83,7 @@ fn main() {
             let ray_direction = pixel_center - camera_center;
             let r = Ray::new(camera_center, ray_direction);
         
-            let pixel_color = ray_color(&r);
+            let pixel_color = ray_color(&r, &mut world);
             write_color(&mut std::io::stdout(), &pixel_color).unwrap();
         }
     }
