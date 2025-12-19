@@ -1,15 +1,17 @@
 use crate::vec3::{Vec3, Point3};
 use crate::color::{write_color, Color};
-use crate::ray::Ray;
+use crate::ray::{self, Ray};
 use crate::hittable::Hittable;
-use crate::{interval::Interval, sphere::Sphere};
+use crate::{interval::Interval};
 use std::io::{self, Write};
-use crate::rtweekend::{INFINITY, PI};
+use crate::rtweekend::{INFINITY, random_double};
 
 pub struct Camera {
     pub aspect_ratio: f64,
-    pub image_width: u16,   
+    pub image_width: u16,
+    pub samples_per_pixel: u16,   
     image_height: u16,
+    pixel_samples_scale: f64,
     center: Point3,
     pixel00_loc: Point3,
     pixel_delta_u: Vec3,
@@ -25,20 +27,23 @@ impl Camera {
             eprint!("\rScanlines remaining: {}", self.image_height - j);
             io::stderr().flush().unwrap();
             for i in 0..self.image_width {
-                let pixel_center = self.pixel00_loc + self.pixel_delta_u * i as f64 + self.pixel_delta_v * j as f64;
-                let ray_direction = pixel_center - self.center;
-                let r = Ray::new(self.center, ray_direction);
-            
-                let pixel_color = Self::ray_color(&r, world);
-                write_color(&mut std::io::stdout(), &pixel_color).unwrap();
+                let mut pixel_color = Color::new(0.0, 0.0, 0.0);
+                for _s in 0..self.samples_per_pixel {
+                    let r = Self::get_ray(&self, i, j);
+                    pixel_color = pixel_color + Self::ray_color(&r, world);
+                }
+                write_color(&mut std::io::stdout(), &(self.pixel_samples_scale * pixel_color)).unwrap();
             }
         }
 
         eprintln!("\rDone!                        ");
     }
 
-    pub fn new(aspect_ratio: f64, image_width: u16) -> Camera {
+    pub fn new(aspect_ratio: f64, image_width: u16, samples_per_pixel: u16) -> Camera {
         let image_height = (image_width as f64 / aspect_ratio) as u16;
+
+        let pixel_samples_scale = 1.0 / samples_per_pixel as f64;
+
         let center = Point3::new(0.0, 0.0, 0.0);
 
         // Find viewport dimensions
@@ -61,7 +66,9 @@ impl Camera {
         Camera {
             aspect_ratio,
             image_width,
+            samples_per_pixel,
             image_height,
+            pixel_samples_scale,
             center,
             pixel00_loc,
             pixel_delta_u,
@@ -82,5 +89,23 @@ impl Camera {
                 return 0.5 * (record.normal + Color::new(1.0, 1.0, 1.0));
             }
         }
+    }
+
+    //Make a ray that comes from camera to a randomly sampled point around the pixel loc i,j
+    fn get_ray(&self, i: u16, j: u16) -> Ray {
+        let offset = Self::sample_square();
+        let pixel_sample = self.pixel00_loc + 
+                                 self.pixel_delta_u * (i as f64 + offset.x()) +
+                                 self.pixel_delta_v * (j as f64 + offset.y());
+        
+        let ray_origin = self.center;
+        let ray_direction = pixel_sample - self.center;
+
+        return Ray::new(ray_origin, ray_direction);
+    }
+
+    fn sample_square() -> Vec3 {
+        //random point in the square [-0.5, -0.5] x [-0.5, 0.5]
+        return Vec3::new(random_double() - 0.5, random_double() - 0.5, 0.0);
     }
 }
