@@ -1,6 +1,8 @@
 use std::{ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub}};
 use std::fmt;
 
+use crate::rtweekend::{random_double, random_double_range};
+
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Vec3 {
     e: [f64; 3]
@@ -55,6 +57,39 @@ impl Vec3 {
     #[inline]
     pub fn unit_vector(v: &Vec3) -> Vec3 {
         *v / v.length()
+    }
+    
+    #[inline]
+    pub fn random_unit_vector() -> Vec3 {
+        loop {
+            let p = Vec3::new_random_range(-1.0, 1.0);
+            let lensq = p.length_squared();
+            if 1e-160 < lensq && lensq <= 1.0 {
+                return p / lensq.sqrt();
+            }
+        }
+    }
+
+    #[inline]
+    pub fn random_on_hemisphere(normal: &Vec3) -> Vec3 {
+        let on_unit_sphere = Vec3::random_unit_vector();
+        if Vec3::dot(on_unit_sphere, *normal) > 0.0 {
+            on_unit_sphere
+        } else {
+            -on_unit_sphere
+        }
+    }
+
+    pub fn new_random() -> Vec3 {
+        Vec3::new(random_double(), random_double(), random_double())
+    }
+
+    pub fn new_random_range(min: f64, max: f64) -> Vec3 {
+        Vec3::new(
+            random_double_range(min, max),
+            random_double_range(min, max),
+            random_double_range(min, max)
+        )
     }
 
 }

@@ -25,8 +25,9 @@ fn main() {
     let aspect_ratio = 16.0 / 9.0;
     let image_width: u16 = 400;
     let samples_per_pixel: u16 = 100;
+    let max_depth: u16 = 50;
 
-    let camera: Camera = Camera::new(aspect_ratio, image_width, samples_per_pixel);
+    let camera: Camera = Camera::new(aspect_ratio, image_width, samples_per_pixel, max_depth);
     camera.render(&world);
 
 }

@@ -9,7 +9,8 @@ use crate::rtweekend::{INFINITY, random_double};
 pub struct Camera {
     pub aspect_ratio: f64,
     pub image_width: u16,
-    pub samples_per_pixel: u16,   
+    pub samples_per_pixel: u16,
+    pub depth: u16,
     image_height: u16,
     pixel_samples_scale: f64,
     center: Point3,
@@ -24,13 +25,13 @@ impl Camera {
         print!("P3\n{} {}\n255\n", self.image_width, self.image_height);
 
         for j in 0..self.image_height {
-            eprint!("\rScanlines remaining: {}", self.image_height - j);
+            eprint!("\rScanlines remaining: {:3}", self.image_height - j);
             io::stderr().flush().unwrap();
             for i in 0..self.image_width {
                 let mut pixel_color = Color::new(0.0, 0.0, 0.0);
                 for _s in 0..self.samples_per_pixel {
                     let r = Self::get_ray(&self, i, j);
-                    pixel_color = pixel_color + Self::ray_color(&r, world);
+                    pixel_color = pixel_color + Self::ray_color(&r, self.depth, world);
                 }
                 write_color(&mut std::io::stdout(), &(self.pixel_samples_scale * pixel_color)).unwrap();
             }
@@ -39,7 +40,7 @@ impl Camera {
         eprintln!("\rDone!                        ");
     }
 
-    pub fn new(aspect_ratio: f64, image_width: u16, samples_per_pixel: u16) -> Camera {
+    pub fn new(aspect_ratio: f64, image_width: u16, samples_per_pixel: u16, depth: u16) -> Camera {
         let image_height = (image_width as f64 / aspect_ratio) as u16;
 
         let pixel_samples_scale = 1.0 / samples_per_pixel as f64;
@@ -67,6 +68,7 @@ impl Camera {
             aspect_ratio,
             image_width,
             samples_per_pixel,
+            depth,
             image_height,
             pixel_samples_scale,
             center,
@@ -76,8 +78,11 @@ impl Camera {
         }
     }
 
-    fn ray_color(r: &Ray, world: &dyn Hittable) -> Color  {
-        match world.hit(r, Interval::new(0.0, INFINITY)) {
+    fn ray_color(r: &Ray, depth: u16, world: &dyn Hittable) -> Color  {
+        if depth <= 0 {
+            return Color::new(0.0, 0.0, 0.0);
+        }
+        match world.hit(r, Interval::new(0.001, INFINITY)) {
             None => {
                 //draw the background
                 let unit_direction = Vec3::unit_vector(&r.direction());
@@ -86,7 +91,8 @@ impl Camera {
             },
             Some(record) => {
                 //draw whatever got hit
-                return 0.5 * (record.normal + Color::new(1.0, 1.0, 1.0));
+                let direction: Vec3 = record.normal + Vec3::random_unit_vector();
+                return Self::ray_color(&Ray::new(record.p, direction), depth-1, world) * 0.5;
             }
         }
     }
