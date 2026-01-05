@@ -91,8 +91,12 @@ impl Camera {
             },
             Some(record) => {
                 //draw whatever got hit
-                let direction: Vec3 = record.normal + Vec3::random_unit_vector();
-                return Self::ray_color(&Ray::new(record.p, direction), depth-1, world) * 0.5;
+                match record.mat.scatter(r, &record) {
+                    None => return Color::new(0.0, 0.0, 0.0),
+                    Some((attenuation, scattered)) => {
+                        return attenuation * Self::ray_color(&scattered, depth-1, world);
+                    }
+                }
             }
         }
     }

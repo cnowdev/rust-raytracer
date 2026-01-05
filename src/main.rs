@@ -7,19 +7,36 @@ pub mod sphere;
 pub mod rtweekend;
 pub mod interval;
 pub mod camera;
+pub mod material;
 
 use vec3::{Point3};
 use hittablelist::{HittableList};
 use sphere::Sphere;
 use camera::Camera;
+use color::Color;
+use material::{Lambertian};
+use std::sync::Arc;
 fn main() {
     let mut world = HittableList::new();
 
+    let ground_material = Arc::new(Lambertian::new(Color::new(0.8, 0.8, 0.0)));
+    let center_material = Arc::new(Lambertian::new(Color::new(0.1, 0.2, 0.5)));
+
+    let material_left = Arc::new(material::Metal::new(Color::new(0.8, 0.8, 0.8), 0.3));
+    let material_right = Arc::new(material::Metal::new(Color::new(0.8, 0.6, 0.2), 1.0));
+
     world.add(Box::new(
-        Sphere::new(Point3::new(0.0, 0.0, -1.0), 0.5))
+        Sphere::new(Point3::new(0.0, 0.0, -1.0), 0.5, center_material.clone()))
     );
     world.add(Box::new(
-        Sphere::new(Point3::new(0.0, -100.5, -1.0), 100.0))
+        Sphere::new(Point3::new(0.0, -100.5, -1.0), 100.0, ground_material.clone()))
+    );
+
+    world.add(Box::new(
+        Sphere::new(Point3::new(-1.0, 0.0, -1.0), 0.5, material_left.clone()))
+    );
+    world.add(Box::new(
+        Sphere::new(Point3::new(1.0, 0.0, -1.0), 0.5, material_right.clone()))
     );
 
     let aspect_ratio = 16.0 / 9.0;

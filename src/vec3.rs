@@ -38,6 +38,11 @@ impl Vec3 {
         self.e[0]*self.e[0] + self.e[1]*self.e[1] + self.e[2]*self.e[2]
     }
 
+    pub fn near_zero(&self) -> bool {
+        let s = 1e-8;
+        (self.e[0].abs() < s) && (self.e[1].abs() < s) && (self.e[2].abs() < s)
+    }
+
     #[inline]
     pub fn dot(u: Vec3, v: Vec3) -> f64 {
             u.e[0] * v.e[0]
@@ -78,6 +83,11 @@ impl Vec3 {
         } else {
             -on_unit_sphere
         }
+    }
+
+    #[inline]
+    pub fn reflect(v: &Vec3, n: &Vec3) -> Vec3 {
+        *v - 2.0 * Vec3::dot(*v, *n) * *n
     }
 
     pub fn new_random() -> Vec3 {

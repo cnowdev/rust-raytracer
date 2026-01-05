@@ -32,8 +32,8 @@ impl Hittable for HittableList {
             match object.hit(r, Interval::new(ray_t.min, closest_so_far)) {
                 None => {},
                 Some(hitrecord) => {
-                    result_hit_record = Some(hitrecord);
                     closest_so_far = hitrecord.t;
+                    result_hit_record = Some(hitrecord);
                 }
             }
         }
