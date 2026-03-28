@@ -1,6 +1,6 @@
 use crate::vec3::{Vec3, Point3};
 use crate::color::{write_color, Color};
-use crate::ray::{self, Ray};
+use crate::ray::{Ray};
 use crate::hittable::Hittable;
 use crate::{interval::Interval};
 use std::io::{self, Write};
